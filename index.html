@@ -175,17 +175,6 @@
       overflow: hidden; background: #000;
       position: relative;
     }
-    .hero-sound-btn {
-      position: absolute; bottom: 12px; right: 12px;
-      width: 36px; height: 36px;
-      background: rgba(0,0,0,0.55); border: none; border-radius: 50%;
-      color: #fff; font-size: 14px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(4px);
-      transition: background 0.2s, transform 0.2s;
-      z-index: 10;
-    }
-    .hero-sound-btn:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
     .hero-video {
       width: 100%; height: 100%;
       object-fit: cover; display: block;
@@ -798,7 +787,6 @@
       <div class="phone-shell">
         <div class="hero-video-frame">
           <video id="heroVid" class="hero-video" src="videos/hero.mp4" autoplay muted loop playsinline></video>
-          <button class="hero-sound-btn" id="heroSoundBtn" onclick="toggleHeroSound()" title="Toggle sound">&#128263;</button>
         </div>
       </div>
       <div class="phone-hashtag">#habuildpur</div>
@@ -1230,12 +1218,19 @@
     }
   }
 
-  function toggleHeroSound() {
+  // Auto-unmute hero video on first user interaction (browsers block autoplay with sound)
+  (function() {
     const vid = document.getElementById('heroVid');
-    const btn = document.getElementById('heroSoundBtn');
-    vid.muted = !vid.muted;
-    btn.innerHTML = vid.muted ? '&#128263;' : '&#128266;';
-  }
+    function unmute() {
+      vid.muted = false;
+      ['click','touchstart','scroll','keydown'].forEach(function(e) {
+        document.removeEventListener(e, unmute);
+      });
+    }
+    ['click','touchstart','scroll','keydown'].forEach(function(e) {
+      document.addEventListener(e, unmute, { once: true, passive: true });
+    });
+  })();
 
   // Sticky CTA — appear after user scrolls past hero
   (function() {
