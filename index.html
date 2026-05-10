@@ -786,7 +786,7 @@
     <div class="phone-wrap">
       <div class="phone-shell">
         <div class="hero-video-frame">
-          <video id="heroVid" class="hero-video" src="videos/hero.mp4" autoplay muted loop playsinline></video>
+          <video id="heroVid" class="hero-video" src="videos/hero.mp4" loop playsinline></video>
         </div>
       </div>
       <div class="phone-hashtag">#habuildpur</div>
@@ -1218,18 +1218,28 @@
     }
   }
 
-  // Auto-unmute hero video on first user interaction (browsers block autoplay with sound)
+  // Play hero video with sound. If browser blocks unmuted autoplay, fall back to
+  // muted autoplay and unmute automatically on the first user interaction.
   (function() {
     const vid = document.getElementById('heroVid');
-    function unmute() {
-      vid.muted = false;
-      ['click','touchstart','scroll','keydown'].forEach(function(e) {
-        document.removeEventListener(e, unmute);
+    vid.muted = false;
+    var playPromise = vid.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(function() {
+        // Browser blocked unmuted autoplay — start muted, then unmute on first interaction
+        vid.muted = true;
+        vid.play();
+        function unmute() {
+          vid.muted = false;
+          ['click','touchstart','scroll','keydown'].forEach(function(e) {
+            document.removeEventListener(e, unmute);
+          });
+        }
+        ['click','touchstart','scroll','keydown'].forEach(function(e) {
+          document.addEventListener(e, unmute, { once: true, passive: true });
+        });
       });
     }
-    ['click','touchstart','scroll','keydown'].forEach(function(e) {
-      document.addEventListener(e, unmute, { once: true, passive: true });
-    });
   })();
 
   // Sticky CTA — appear after user scrolls past hero
