@@ -787,7 +787,7 @@
     <div class="phone-wrap">
       <div class="phone-shell">
         <div class="hero-video-frame">
-          <video id="heroVid" class="hero-video" src="videos/hero.mp4" loop playsinline></video>
+          <video id="heroVid" class="hero-video" src="videos/hero.mp4" loop playsinline webkit-playsinline></video>
         </div>
       </div>
       <div class="phone-hashtag">#habuildpur</div>
@@ -1219,63 +1219,37 @@
     }
   }
 
-  // Hero video: try unmuted autoplay; if blocked, muted + unmute on first interaction.
-  // Sound mutes when viewer scrolls past stats; resumes on scroll back up.
+  // Hero video sound logic
   (function() {
     var vid = document.getElementById('heroVid');
+    var stats = document.querySelector('.stats-strip');
     var soundEnabled = false;
 
-    // Force video to keep playing if anything pauses it (mobile tap, focus change etc.)
-    vid.addEventListener('pause', function() { vid.play(); });
+    // Start muted — required for autoplay on all browsers
+    vid.muted = true;
+    vid.play().catch(function() {});
 
-    // Attempt unmuted autoplay
-    vid.muted = false;
-    var playPromise = vid.play();
-    if (playPromise !== undefined) {
-      playPromise.then(function() {
-        soundEnabled = true;
-      }).catch(function() {
-        // Browser blocked — play muted, unmute on first interaction
-        vid.muted = true;
-        vid.play();
-        function onInteract() {
-          soundEnabled = true;
-          vid.muted = false;
-          ['click','touchstart','scroll','keydown'].forEach(function(e) {
-            document.removeEventListener(e, onInteract);
-          });
-        }
-        ['click','touchstart','scroll','keydown'].forEach(function(e) {
-          document.addEventListener(e, onInteract, { once: true, passive: true });
-        });
-      });
+    // Is the stats strip still in view?
+    function statVisible() {
+      return stats.getBoundingClientRect().bottom >= 0;
     }
 
-    // Mute/unmute based on whether stats strip is still visible
-    var stats = document.querySelector('.stats-strip');
-
-    function checkScrollMute() {
-      var rect = stats.getBoundingClientRect();
-      var pastStats = rect.bottom < 0;
-      if (pastStats) {
-        vid.muted = true;
-      } else if (soundEnabled) {
+    // Enable sound on first user interaction, but only if still above stats
+    function onFirstInteract() {
+      soundEnabled = true;
+      if (statVisible()) {
         vid.muted = false;
       }
     }
+    ['scroll', 'touchstart', 'click'].forEach(function(e) {
+      document.addEventListener(e, onFirstInteract, { once: true, passive: true });
+    });
 
-    // IntersectionObserver (desktop) + scroll listener (mobile fallback)
-    new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (!entry.isIntersecting) {
-          vid.muted = true;
-        } else if (soundEnabled) {
-          vid.muted = false;
-        }
-      });
-    }, { threshold: 0 }).observe(stats);
-
-    window.addEventListener('scroll', checkScrollMute, { passive: true });
+    // After sound is enabled, mute/unmute purely based on scroll position
+    window.addEventListener('scroll', function() {
+      if (!soundEnabled) return;
+      vid.muted = !statVisible();
+    }, { passive: true });
   })();
 
   // Sticky CTA — appear after user scrolls past hero
