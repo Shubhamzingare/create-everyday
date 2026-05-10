@@ -178,6 +178,7 @@
     .hero-video {
       width: 100%; height: 100%;
       object-fit: cover; display: block;
+      pointer-events: none; /* prevent tap-to-pause on mobile */
     }
     .phone-badge-views {
       position: absolute; top: 40px; right: -28px;
@@ -1219,10 +1220,13 @@
   }
 
   // Hero video: try unmuted autoplay; if blocked, muted + unmute on first interaction.
-  // Sound automatically mutes when viewer scrolls past the stats section.
+  // Sound mutes when viewer scrolls past stats; resumes on scroll back up.
   (function() {
     var vid = document.getElementById('heroVid');
     var soundEnabled = false;
+
+    // Force video to keep playing if anything pauses it (mobile tap, focus change etc.)
+    vid.addEventListener('pause', function() { vid.play(); });
 
     // Attempt unmuted autoplay
     vid.muted = false;
@@ -1247,7 +1251,20 @@
       });
     }
 
-    // Mute when viewer scrolls past stats; restore sound when scrolled back up
+    // Mute/unmute based on whether stats strip is still visible
+    var stats = document.querySelector('.stats-strip');
+
+    function checkScrollMute() {
+      var rect = stats.getBoundingClientRect();
+      var pastStats = rect.bottom < 0;
+      if (pastStats) {
+        vid.muted = true;
+      } else if (soundEnabled) {
+        vid.muted = false;
+      }
+    }
+
+    // IntersectionObserver (desktop) + scroll listener (mobile fallback)
     new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (!entry.isIntersecting) {
@@ -1256,7 +1273,9 @@
           vid.muted = false;
         }
       });
-    }, { threshold: 0 }).observe(document.querySelector('.stats-strip'));
+    }, { threshold: 0 }).observe(stats);
+
+    window.addEventListener('scroll', checkScrollMute, { passive: true });
   })();
 
   // Sticky CTA — appear after user scrolls past hero
