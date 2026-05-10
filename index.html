@@ -1218,28 +1218,45 @@
     }
   }
 
-  // Play hero video with sound. If browser blocks unmuted autoplay, fall back to
-  // muted autoplay and unmute automatically on the first user interaction.
+  // Hero video: try unmuted autoplay; if blocked, muted + unmute on first interaction.
+  // Sound automatically mutes when viewer scrolls past the stats section.
   (function() {
-    const vid = document.getElementById('heroVid');
+    var vid = document.getElementById('heroVid');
+    var soundEnabled = false;
+
+    // Attempt unmuted autoplay
     vid.muted = false;
     var playPromise = vid.play();
     if (playPromise !== undefined) {
-      playPromise.catch(function() {
-        // Browser blocked unmuted autoplay — start muted, then unmute on first interaction
+      playPromise.then(function() {
+        soundEnabled = true;
+      }).catch(function() {
+        // Browser blocked — play muted, unmute on first interaction
         vid.muted = true;
         vid.play();
-        function unmute() {
+        function onInteract() {
+          soundEnabled = true;
           vid.muted = false;
           ['click','touchstart','scroll','keydown'].forEach(function(e) {
-            document.removeEventListener(e, unmute);
+            document.removeEventListener(e, onInteract);
           });
         }
         ['click','touchstart','scroll','keydown'].forEach(function(e) {
-          document.addEventListener(e, unmute, { once: true, passive: true });
+          document.addEventListener(e, onInteract, { once: true, passive: true });
         });
       });
     }
+
+    // Mute when viewer scrolls past stats; restore sound when scrolled back up
+    new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) {
+          vid.muted = true;
+        } else if (soundEnabled) {
+          vid.muted = false;
+        }
+      });
+    }, { threshold: 0 }).observe(document.querySelector('.stats-strip'));
   })();
 
   // Sticky CTA — appear after user scrolls past hero
