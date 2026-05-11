@@ -170,20 +170,13 @@
       text-align: center;
     }
     .sound-toggle {
-      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-      margin-top: 1.2rem;
-      background: var(--coral); color: #fff; border: none;
-      padding: 0.8rem 1.6rem; border-radius: 50px;
-      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
-      cursor: pointer; width: 100%;
-      box-shadow: 0 4px 18px rgba(232,127,87,0.45);
-      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      display: block; margin: 1rem auto 0;
+      background: none; border: none;
+      font-size: 2rem; cursor: pointer;
+      opacity: 0.75; transition: opacity 0.2s, transform 0.2s;
+      line-height: 1; padding: 0;
     }
-    .sound-toggle:hover { transform: scale(1.04); box-shadow: 0 8px 28px rgba(232,127,87,0.55); }
-    .sound-toggle.sound-on { background: var(--teal); box-shadow: 0 4px 18px rgba(63,166,142,0.45); }
-    .sound-toggle.sound-on:hover { box-shadow: 0 8px 28px rgba(63,166,142,0.55); }
-    .sound-toggle-icon { font-size: 1.3rem; line-height: 1; }
-    .sound-toggle-label { font-size: 0.95rem; }
+    .sound-toggle:hover { opacity: 1; transform: scale(1.15); }
     .hero-video-frame {
       width: 100%; flex: 1;
       border-radius: 0;
@@ -806,10 +799,7 @@
         </div>
       </div>
       <div class="phone-hashtag">#habuildpur</div>
-      <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">
-        <span class="sound-toggle-icon">&#128263;</span>
-        <span class="sound-toggle-label">Tap for Sound</span>
-      </button>
+      <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">&#128263;</button>
     </div>
   </div>
   <div class="hero-cta-wrap">
@@ -1245,16 +1235,9 @@
     var btn = document.getElementById('soundToggle');
     var userWantsSound = false; // tracks user's explicit preference
 
-    // Update button appearance
+    // Update button icon
     function updateBtn() {
-      var muted = vid.muted;
-      btn.querySelector('.sound-toggle-icon').innerHTML = muted ? '&#128263;' : '&#128266;';
-      btn.querySelector('.sound-toggle-label').textContent = muted ? 'Tap for Sound' : 'Sound On';
-      if (muted) {
-        btn.classList.remove('sound-on');
-      } else {
-        btn.classList.add('sound-on');
-      }
+      btn.innerHTML = vid.muted ? '&#128263;' : '&#128266;';
     }
 
     // Keep video playing — resume if browser pauses it (tab switch, scroll, etc.)
