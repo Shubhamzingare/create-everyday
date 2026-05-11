@@ -169,6 +169,21 @@
       color: var(--teal); letter-spacing: 0.04em;
       text-align: center;
     }
+    .sound-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      margin-top: 1.2rem;
+      background: var(--coral); color: #fff; border: none;
+      padding: 0.8rem 1.6rem; border-radius: 50px;
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
+      cursor: pointer; width: 100%;
+      box-shadow: 0 4px 18px rgba(232,127,87,0.45);
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .sound-toggle:hover { transform: scale(1.04); box-shadow: 0 8px 28px rgba(232,127,87,0.55); }
+    .sound-toggle.sound-on { background: var(--teal); box-shadow: 0 4px 18px rgba(63,166,142,0.45); }
+    .sound-toggle.sound-on:hover { box-shadow: 0 8px 28px rgba(63,166,142,0.55); }
+    .sound-toggle-icon { font-size: 1.3rem; line-height: 1; }
+    .sound-toggle-label { font-size: 0.95rem; }
     .hero-video-frame {
       width: 100%; flex: 1;
       border-radius: 0;
@@ -787,10 +802,14 @@
     <div class="phone-wrap">
       <div class="phone-shell">
         <div class="hero-video-frame">
-          <video id="heroVid" class="hero-video" src="videos/hero.mp4" loop playsinline webkit-playsinline></video>
+          <video id="heroVid" class="hero-video" src="videos/hero.mp4" autoplay loop playsinline webkit-playsinline></video>
         </div>
       </div>
       <div class="phone-hashtag">#habuildpur</div>
+      <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">
+        <span class="sound-toggle-icon">&#128263;</span>
+        <span class="sound-toggle-label">Tap for Sound</span>
+      </button>
     </div>
   </div>
   <div class="hero-cta-wrap">
@@ -1219,36 +1238,62 @@
     }
   }
 
-  // Hero video sound logic
+  // Hero video — sound toggle + keep-alive logic
   (function() {
     var vid = document.getElementById('heroVid');
     var stats = document.querySelector('.stats-strip');
-    var soundEnabled = false;
+    var btn = document.getElementById('soundToggle');
+    var userWantsSound = false; // tracks user's explicit preference
 
-    // Start muted — required for autoplay on all browsers
+    // Update button appearance
+    function updateBtn() {
+      var muted = vid.muted;
+      btn.querySelector('.sound-toggle-icon').innerHTML = muted ? '&#128263;' : '&#128266;';
+      btn.querySelector('.sound-toggle-label').textContent = muted ? 'Tap for Sound' : 'Sound On';
+      if (muted) {
+        btn.classList.remove('sound-on');
+      } else {
+        btn.classList.add('sound-on');
+      }
+    }
+
+    // Keep video playing — resume if browser pauses it (tab switch, scroll, etc.)
+    function keepPlaying() {
+      if (vid.paused) {
+        vid.play().catch(function() {});
+      }
+    }
+
+    // Start muted autoplay (required by browsers)
     vid.muted = true;
     vid.play().catch(function() {});
+    updateBtn();
 
-    // Is the stats strip still in view?
+    // Resume video when tab becomes visible again
+    document.addEventListener('visibilitychange', keepPlaying);
+    // Resume if paused by scroll/focus events on mobile
+    vid.addEventListener('pause', function() {
+      setTimeout(keepPlaying, 100);
+    });
+
+    // Is the stats strip still in the viewport?
     function statVisible() {
       return stats.getBoundingClientRect().bottom >= 0;
     }
 
-    // Enable sound on first user interaction, but only if still above stats
-    function onFirstInteract() {
-      soundEnabled = true;
-      if (statVisible()) {
-        vid.muted = false;
-      }
-    }
-    ['scroll', 'touchstart', 'click'].forEach(function(e) {
-      document.addEventListener(e, onFirstInteract, { once: true, passive: true });
-    });
+    // Sound toggle button — user explicitly turns sound on/off
+    window.toggleSound = function() {
+      userWantsSound = !userWantsSound;
+      vid.muted = !userWantsSound;
+      updateBtn();
+    };
 
-    // After sound is enabled, mute/unmute purely based on scroll position
+    // Mute when scrolled past stats; restore if user had sound on
     window.addEventListener('scroll', function() {
-      if (!soundEnabled) return;
-      vid.muted = !statVisible();
+      if (!userWantsSound) return;
+      var visible = statVisible();
+      vid.muted = !visible;
+      updateBtn();
     }, { passive: true });
   })();
 
